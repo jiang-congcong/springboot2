@@ -1,5 +1,6 @@
 package com.cn.ccj.springboot03;
 
+import com.cn.ccj.springboot03.elasticSearch.EsRestClient;
 import com.cn.ccj.springboot03.entity.User;
 import com.cn.ccj.springboot03.redis.RedisOperate;
 import org.junit.jupiter.api.Test;
@@ -9,6 +10,7 @@ import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -21,26 +23,8 @@ class Springboot03ApplicationTests {
     @Autowired
     RedisOperate redisOperate;
 
-    @Test
-    void contextLoads() {
-    }
-
-    @Test
-    public void testTime(){
-//        SimpleDateFormat df = new SimpleDateFormat("yyyyMMddHHmmss");//设置日期格式
-//        String s = df.format(new Date());
-//        System.out.println(s);// new Date()为获取当前系统时间
-
-//        String version = "202103031435050002";
-//        int num = Integer.valueOf(version.substring(version.length()-4));
-//        System.out.println(num);
-        String s= "0000";
-        String s1= "2";
-        StringBuilder sb = new StringBuilder(s);
-        sb.replace(4-s1.length(),5,s1);
-        String s2 = "20210303143505"+sb;
-        System.out.println(s2);
-    }
+    @Autowired
+    EsRestClient esRestClient;
 
     @Test
     public void setUserNameToRedis(){
@@ -81,12 +65,11 @@ class Springboot03ApplicationTests {
 
     }
 
+
     @Test
-    public void test02(){
-        Map map = new HashMap();
-        map.put("id","0001");
-        String string = (String)map.get("name");
-        System.out.println(string);
+    public void testEsRestClient() throws IOException {
+        Map map = esRestClient.searchEsMessageAll();
+        System.out.println(map);
     }
 
 }

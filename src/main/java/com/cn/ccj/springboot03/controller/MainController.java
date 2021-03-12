@@ -93,11 +93,6 @@ public class MainController {
         return resultOutputObject;
     }
 
-//    @ApiOperation(value = "获取用户年龄")
-//    @RequestMapping(method = RequestMethod.POST,value = "/getage")
-//    public String getAge(){
-//        return "12";
-//    }
 
     @ApiOperation(value = "保存用户信息")
     @RequestMapping(method = RequestMethod.POST,value = "/setUserMessage")
@@ -121,15 +116,6 @@ public class MainController {
         return resultOutputObject;
 
     }
-
-//    @ApiOperation(value = "保存参数")
-//    @RequestMapping(method = RequestMethod.POST,value = "/saveParams")
-//    public Object setParamsToRedis(@RequestBody RequestInputObject requestInputObject) throws Exception {
-//        Map<String,Object> reqMap = requestInputObject.getParams();
-//        redisOperate.saveMessageToRedis((String)reqMap.get("key"),reqMap.get("value"));
-//        return (Object) redisOperate.getMessageFromRedis((String)reqMap.get("key"));
-//
-//    }
 
 
 
