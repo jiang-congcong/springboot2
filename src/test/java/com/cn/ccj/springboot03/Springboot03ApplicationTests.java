@@ -86,13 +86,14 @@ class Springboot03ApplicationTests {
         String index = "test";
         String type = "";
         Map map = new HashMap();
-        map.put("name","小花");
-        map.put("age",18);
+        map.put("id","0001");
+        map.put("name","甜甜");
+        map.put("age",20);
         map.put("sex","女");
         try {
             esRestClient.putMessageToES(index,type,map);
         }catch (Exception e){
-            logger.error("插入ES失败");
+            logger.error("插入ES失败"+e.getMessage());
             throw new GeneralException("-9999","插入ES失败");
         }
         System.out.println(map);
@@ -130,19 +131,36 @@ class Springboot03ApplicationTests {
         searchSourceBuilder.from(0);
         searchSourceBuilder.size(10);
         searchSourceBuilder.sort("age");
+        searchSourceBuilder.fetchSource(new String[] {"name","age"},new String[] {});//第一个参数指查询返回字段列表，第二个指不返回字段
         //key.keyword key+.keyword来匹配，不然字符串匹配不上，IK分词器的问题（elasticsearch 里默认的IK分词器是会将每一个中文都进行了分词的切割，所以你直接想查一整个词，或者一整句话是无返回结果的）
         TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery("name.keyword","小红");
+        TermQueryBuilder termQueryBuilder02 = QueryBuilders.termQuery("sex.keyword","女");
         MatchQueryBuilder matchQueryBuilder = QueryBuilders.matchQuery("hobby","打游戏");
         RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery("age");
         rangeQueryBuilder.gte(12);
         rangeQueryBuilder.lte(30);
         BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
         boolQueryBuilder.must(termQueryBuilder);
+        boolQueryBuilder.must(termQueryBuilder02);
         boolQueryBuilder.must(matchQueryBuilder);
         boolQueryBuilder.must(rangeQueryBuilder);
         searchSourceBuilder.query(boolQueryBuilder);
         Map<String,Object> resultMap = esRestClient.queryMessageFromES("test",searchSourceBuilder);
         System.out.println(resultMap);
+    }
+
+    @Test
+    public void testEsRestClient04() throws Exception { //测试ES删除功能
+        esRestClient.deleteMessageFromES("test","_doc","s9YONXgBgMBi6CeU2ysm");
+    }
+
+    @Test
+    public void testEsRestClient05() throws Exception {//测试ES更新功能
+        Map updateMap = new HashMap();
+        updateMap.put("name","小甜甜");
+        updateMap.put("age",22);
+        updateMap.put("hobby","学习、画画、逛街");
+        esRestClient.updateMessageToES("test","_doc","v30LOngBf9b6dnEdQdas",updateMap);
     }
 
 }

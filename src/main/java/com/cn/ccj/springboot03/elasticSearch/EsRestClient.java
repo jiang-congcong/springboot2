@@ -8,11 +8,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.netty.util.internal.StringUtil;
 import org.apache.lucene.search.TotalHits;
 import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -40,10 +42,12 @@ import java.util.Map;
  */
 public class EsRestClient {
 
+    @Autowired
     private RestHighLevelClient restHighLevelClient;
 
     public static Logger logger = LoggerFactory.getLogger(RedisOperate.class);
 
+    @Autowired
     private CommonCode commonCode;
 
     public EsRestClient() {
@@ -56,7 +60,7 @@ public class EsRestClient {
     public Map<String,Object> searchEsMessageAll() throws IOException {
         Map<String,Object> resultMap = new HashMap<String,Object>();
 
-        SearchRequest searchRequest = new SearchRequest("ecommerce");
+        SearchRequest searchRequest = new SearchRequest("test");
         //searchRequest.types("product");
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.query(QueryBuilders.matchAllQuery());
@@ -78,18 +82,19 @@ public class EsRestClient {
 
     //单条数据插入ES
     public void putMessageToES(String index,String type,Object putMessage) throws Exception {
-        if(null==index||null==type||index.length()<1||type.length()<1){
+        if(StringUtil.isNullOrEmpty(index)||StringUtil.isNullOrEmpty(type)){
             throw new GeneralException(commonCode.DEFAUT_ERROR_CODE,"ES索引和类型必传不为空");
         }
         if(null==putMessage){
             throw new GeneralException(commonCode.DEFAUT_ERROR_CODE,"插入ES数据不能为空");
         }
-        IndexRequest indexRequest = new IndexRequest(index, type);
+        //IndexRequest indexRequest = new IndexRequest(index, type);
         String source = JsonUtil.objectToString(putMessage);//转成json字符串
+        IndexRequest indexRequest = new IndexRequest(index, type);
         indexRequest.source(source, XContentType.JSON);
         try {
             restHighLevelClient.index(indexRequest,RequestOptions.DEFAULT);
-        } catch (IOException e) {
+        } catch (Exception e) {
             // TODO Auto-generated catch block
             logger.error(putMessage+"插入ES失败："+e.getMessage());
             throw new GeneralException(commonCode.DEFAUT_ERROR_CODE,"插入ES失败");
@@ -99,7 +104,7 @@ public class EsRestClient {
 
     //批量数据插入ES
     public void batchPutMessageToES(String index,String type,List batchPutMessage) throws Exception {
-        if(null==index||null==type||index.length()<1||type.length()<1){
+        if(StringUtil.isNullOrEmpty(index)||StringUtil.isNullOrEmpty(type)){
             throw new GeneralException(commonCode.DEFAUT_ERROR_CODE,"ES索引和类型必传不为空");
         }
         if(null==batchPutMessage){
@@ -123,6 +128,12 @@ public class EsRestClient {
 
     //查询ES数据
     public Map<String,Object> queryMessageFromES(String index,SearchSourceBuilder searchSourceBuilder) throws Exception {
+        if(StringUtil.isNullOrEmpty(index)){
+            throw new GeneralException(commonCode.DEFAUT_ERROR_CODE,"ES索引必传不为空");
+        }
+        if(null==searchSourceBuilder){
+            throw new GeneralException(commonCode.DEFAUT_ERROR_CODE,"查询报文builder必传");
+        }
         Map<String,Object> resultMap = new HashMap<String,Object>();
         SearchRequest searchRequest = new SearchRequest(index);
         searchRequest.source(searchSourceBuilder);
@@ -144,6 +155,46 @@ public class EsRestClient {
 
 
         return resultMap;
+    }
+
+    //根据id删除ES数据
+    public void deleteMessageFromES(String index,String type,String id) throws Exception {
+        if(StringUtil.isNullOrEmpty(index)||StringUtil.isNullOrEmpty(type)){
+            throw new GeneralException(commonCode.DEFAUT_ERROR_CODE,"ES索引和类型必传不为空");
+        }
+        if(StringUtil.isNullOrEmpty(id)){
+            throw new GeneralException(commonCode.DEFAUT_ERROR_CODE,"删除ES数据id必传不为空");
+        }
+        DeleteRequest deleteRequest = new DeleteRequest(index,type,id);
+        try {
+            restHighLevelClient.delete(deleteRequest,RequestOptions.DEFAULT);
+        }catch (Exception e){
+            logger.error("ES删除失败："+id+e.getMessage());
+            throw new GeneralException(commonCode.DEFAUT_ERROR_CODE,"ES删除失败");
+        }
+
+    }
+
+    //更新ES数据
+    public void updateMessageToES(String index, String type,String id,Object updateMessage) throws Exception {
+        if(StringUtil.isNullOrEmpty(index)||StringUtil.isNullOrEmpty(type)){
+            throw new GeneralException(commonCode.DEFAUT_ERROR_CODE,"ES索引和类型必传不为空");
+        }
+        if(StringUtil.isNullOrEmpty(id)){
+            throw new GeneralException(commonCode.DEFAUT_ERROR_CODE,"删除ES数据id必传不为空");
+        }
+        if(null==updateMessage){
+            throw new GeneralException(commonCode.DEFAUT_ERROR_CODE,"更新ES更新数据不能为空");
+        }
+        UpdateRequest updateRequest = new UpdateRequest(index, type, id);
+        String jsonString = JsonUtil.objectToString(updateMessage);
+        updateRequest.doc(jsonString,XContentType.JSON);
+        try {
+            restHighLevelClient.update(updateRequest,RequestOptions.DEFAULT);
+        } catch (Exception e) {
+            logger.error(id+"更新ES失败:"+e.getMessage());
+            throw  new GeneralException(commonCode.DEFAUT_ERROR_CODE,id+"更新ES失败:"+e.getMessage());
+        }
     }
 
 
