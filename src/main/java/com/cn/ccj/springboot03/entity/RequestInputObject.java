@@ -6,6 +6,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 请求报文接口类封装
+ */
 public class RequestInputObject implements Serializable {
 
     private Map<String,Object> params = new HashMap<String,Object>();

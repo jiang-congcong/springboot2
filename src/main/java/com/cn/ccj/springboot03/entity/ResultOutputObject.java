@@ -6,6 +6,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 出参报文接口类封装
+ */
+
 public class ResultOutputObject implements Serializable {
     private String rtnCode;
     private String rtnMsg;
