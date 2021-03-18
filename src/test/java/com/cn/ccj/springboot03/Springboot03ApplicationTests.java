@@ -84,14 +84,16 @@ class Springboot03ApplicationTests {
     @Test
     public void testEsRestClient01() throws Exception { //测试es单条插入
         String index = "test";
-        String type = "";
+        String type = "_doc";
         Map map = new HashMap();
-        map.put("id","0001");
-        map.put("name","甜甜");
-        map.put("age",20);
-        map.put("sex","女");
+        map.put("id","0002");
+        map.put("name","憨憨");
+        map.put("age",24);
+        map.put("sex","男");
+        map.put("hobby","学习，玩手机，做饭");
+        map.put("work","programmer");
         try {
-            esRestClient.putMessageToES(index,type,map);
+            esRestClient.putMessageToES(index,type,map,(String)map.get("id"));
         }catch (Exception e){
             logger.error("插入ES失败"+e.getMessage());
             throw new GeneralException("-9999","插入ES失败");
@@ -104,18 +106,37 @@ class Springboot03ApplicationTests {
         String index = "test";
         String type = "_doc";
         Map map1 = new HashMap();
-        map1.put("name","小红");
-        map1.put("age",18);
+        map1.put("id","0003");
+        map1.put("name","珊珊");
+        map1.put("age",22);
         map1.put("sex","女");
-        map1.put("hobby","看书，下棋，玩手机，打游戏");
+        map1.put("hobby","看书，玩手机，学习，逛街");
         Map map2 = new HashMap();
-        map2.put("name","小张");
-        map2.put("age",20);
-        map2.put("sex","男");
-        map2.put("hobby","玩手机，打游戏，刷视频");
+        map2.put("id","0004");
+        map2.put("name","婷婷");
+        map2.put("age",23);
+        map2.put("sex","女");
+        map2.put("hobby","玩手机，打游戏，干饭");
+        User user = new User();
+        user.setGender("男");
+        user.setName("小何");
+        user.setId("0005");
+        user.setAge(24);
+
         List list = new ArrayList();
-        list.add(map1);
-        list.add(map2);
+        Map mapToList01 = new HashMap();
+        mapToList01.put("id",map1.get("id"));
+        mapToList01.put("putMessage",map1);
+        Map mapToList02 = new HashMap();
+        mapToList02.put("id",map2.get("id"));
+        mapToList02.put("putMessage",map2);
+        Map mapToList03 = new HashMap();
+        mapToList03.put("id",user.getId());
+        mapToList03.put("putMessage",user);
+
+        list.add(mapToList01);
+        list.add(mapToList02);
+        list.add(mapToList03);
         try {
             esRestClient.batchPutMessageToES(index,type,list);
         }catch (Exception e){
@@ -129,7 +150,7 @@ class Springboot03ApplicationTests {
     public void testEsRestClient03() throws Exception { //测试es查询功能
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.from(0);
-        searchSourceBuilder.size(10);
+        searchSourceBuilder.size(100);
         searchSourceBuilder.sort("age");
         searchSourceBuilder.fetchSource(new String[] {"name","age"},new String[] {});//第一个参数指查询返回字段列表，第二个指不返回字段
         //key.keyword key+.keyword来匹配，不然字符串匹配不上，IK分词器的问题（elasticsearch 里默认的IK分词器是会将每一个中文都进行了分词的切割，所以你直接想查一整个词，或者一整句话是无返回结果的）
@@ -161,6 +182,29 @@ class Springboot03ApplicationTests {
         updateMap.put("age",22);
         updateMap.put("hobby","学习、画画、逛街");
         esRestClient.updateMessageToES("test","_doc","v30LOngBf9b6dnEdQdas",updateMap);
+    }
+
+    @Test
+    public void testEsRestClient06() throws Exception { //测试ES滚动查询
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.size(1000);
+        searchSourceBuilder.sort("age");
+        //searchSourceBuilder.fetchSource(new String[] {"name","age"},new String[] {});//第一个参数指查询返回字段列表，第二个指不返回字段
+        //key.keyword key+.keyword来匹配，不然字符串匹配不上，IK分词器的问题（elasticsearch 里默认的IK分词器是会将每一个中文都进行了分词的切割，所以你直接想查一整个词，或者一整句话是无返回结果的）
+        TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery("name.keyword","小红");
+        TermQueryBuilder termQueryBuilder02 = QueryBuilders.termQuery("sex.keyword","女");
+        MatchQueryBuilder matchQueryBuilder = QueryBuilders.matchQuery("hobby","打游戏");
+        RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery("age");
+        rangeQueryBuilder.gte(12);
+        rangeQueryBuilder.lte(30);
+        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+//        boolQueryBuilder.must(termQueryBuilder);
+//        boolQueryBuilder.must(termQueryBuilder02);
+//        boolQueryBuilder.must(matchQueryBuilder);
+        boolQueryBuilder.must(rangeQueryBuilder);
+        searchSourceBuilder.query(boolQueryBuilder);
+        Map<String,Object> resultMap = esRestClient.scrollSearchFromES("test",searchSourceBuilder);
+        System.out.println(resultMap);
     }
 
 }

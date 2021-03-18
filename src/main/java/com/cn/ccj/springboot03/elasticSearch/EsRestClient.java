@@ -8,19 +8,21 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.netty.util.internal.StringUtil;
 import org.apache.lucene.search.TotalHits;
 import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchRequestBuilder;
-import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.*;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.eql.EqlSearchResponse;
+import org.elasticsearch.common.recycler.Recycler;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
@@ -81,16 +83,19 @@ public class EsRestClient {
     }
 
     //单条数据插入ES
-    public void putMessageToES(String index,String type,Object putMessage) throws Exception {
+    public void putMessageToES(String index,String type,Object putMessage,String id) throws Exception {
         if(StringUtil.isNullOrEmpty(index)||StringUtil.isNullOrEmpty(type)){
             throw new GeneralException(commonCode.DEFAUT_ERROR_CODE,"ES索引和类型必传不为空");
+        }
+        if(StringUtil.isNullOrEmpty(id)){
+            throw new GeneralException(commonCode.DEFAUT_ERROR_CODE,"ES插入ID必传不为空");
         }
         if(null==putMessage){
             throw new GeneralException(commonCode.DEFAUT_ERROR_CODE,"插入ES数据不能为空");
         }
         //IndexRequest indexRequest = new IndexRequest(index, type);
         String source = JsonUtil.objectToString(putMessage);//转成json字符串
-        IndexRequest indexRequest = new IndexRequest(index, type);
+        IndexRequest indexRequest = new IndexRequest(index, type, id);//指定id插入
         indexRequest.source(source, XContentType.JSON);
         try {
             restHighLevelClient.index(indexRequest,RequestOptions.DEFAULT);
@@ -103,7 +108,7 @@ public class EsRestClient {
     }
 
     //批量数据插入ES
-    public void batchPutMessageToES(String index,String type,List batchPutMessage) throws Exception {
+    public void batchPutMessageToES(String index,String type,List<Map<String,Object>> batchPutMessage) throws Exception {
         if(StringUtil.isNullOrEmpty(index)||StringUtil.isNullOrEmpty(type)){
             throw new GeneralException(commonCode.DEFAUT_ERROR_CODE,"ES索引和类型必传不为空");
         }
@@ -111,14 +116,18 @@ public class EsRestClient {
             throw new GeneralException(commonCode.DEFAUT_ERROR_CODE,"批量插入ES数据不能为空");
         }
         BulkRequest bulkRequest = new BulkRequest();
-        for(Object eachbatchPutMessage:batchPutMessage){
-            String source = JsonUtil.objectToString(eachbatchPutMessage);//转json
-            IndexRequest indexRequest = new IndexRequest(index,type);
+        for(Map<String,Object> eachbatchPutMessage:batchPutMessage){
+            String id = (String)eachbatchPutMessage.get("id");//指定id插入
+            Object object = eachbatchPutMessage.get("putMessage");//插入ES数据
+            String source = JsonUtil.objectToString(object);//转json
+            IndexRequest indexRequest = new IndexRequest(index,type,id);
             indexRequest.source(source,XContentType.JSON);
             bulkRequest.add(indexRequest);
         }
         try {
-            restHighLevelClient.bulk(bulkRequest,RequestOptions.DEFAULT);
+            BulkResponse bulk = restHighLevelClient.bulk(bulkRequest,RequestOptions.DEFAULT);
+            int code = bulk.status().getStatus();
+            System.out.println(code);
         }catch (Exception e){
             logger.error(batchPutMessage+"批量插入ES失败："+e.getMessage());
             throw new GeneralException(commonCode.DEFAUT_ERROR_CODE,"批量插入ES失败");
@@ -195,6 +204,52 @@ public class EsRestClient {
             logger.error(id+"更新ES失败:"+e.getMessage());
             throw  new GeneralException(commonCode.DEFAUT_ERROR_CODE,id+"更新ES失败:"+e.getMessage());
         }
+    }
+
+    //ES滚动查询
+    public Map<String, Object> scrollSearchFromES(String index, SearchSourceBuilder searchSourceBuilder) throws Exception {
+        Map<String, Object> resultMap = new HashMap<String, Object>();
+        List resultList = new ArrayList();
+
+        final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(1L));
+        SearchRequest searchRequest = new SearchRequest(index);
+        searchRequest.scroll(scroll);
+        searchRequest.source(searchSourceBuilder);
+        try {
+            SearchResponse searchResponse = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
+            String scrollId = searchResponse.getScrollId();
+            SearchHit[] searchHits = searchResponse.getHits().getHits();
+            if (null != searchHits && searchHits.length > 0) {
+                for (SearchHit searchHit : searchHits) {
+                    resultList.add(searchHit.getSourceAsMap());
+                }
+            }
+            Long total = searchResponse.getHits().getTotalHits().value;
+            resultMap.put("total", total);
+            while (searchHits != null && searchHits.length > 0) {
+
+                SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+                scrollRequest.scroll(scroll);
+                searchResponse = restHighLevelClient.scroll(scrollRequest, RequestOptions.DEFAULT);
+                scrollId = searchResponse.getScrollId();
+                searchHits = searchResponse.getHits().getHits();
+                if (null != searchHits && searchHits.length > 0) {
+                    for (SearchHit searchHit : searchHits) {
+                        resultList.add(searchHit.getSourceAsMap());
+                    }
+                }
+            }
+            resultMap.put("resultList", resultList);
+
+            ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
+            clearScrollRequest.addScrollId(scrollId);
+            ClearScrollResponse clearScrollResponse = restHighLevelClient.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
+        }catch (Exception e){
+            logger.error("滚动查询失败" + e.getMessage());
+            throw new GeneralException(commonCode.DEFAUT_ERROR_CODE, "滚动查询失败" + e.getMessage());
+        }
+        return resultMap;
+
     }
 
 
