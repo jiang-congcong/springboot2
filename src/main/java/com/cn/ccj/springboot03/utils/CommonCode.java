@@ -1,4 +1,4 @@
-package com.cn.ccj.springboot03.util;
+package com.cn.ccj.springboot03.utils;
 
 /**
  * @author jiangcongcong
