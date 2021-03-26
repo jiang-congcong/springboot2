@@ -3,22 +3,16 @@ package com.cn.ccj.springboot03.elasticSearch;
 import com.cn.ccj.springboot03.generalException.GeneralException;
 import com.cn.ccj.springboot03.jsonUtil.JsonUtil;
 import com.cn.ccj.springboot03.redis.RedisOperate;
-import com.cn.ccj.springboot03.util.CommonCode;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.cn.ccj.springboot03.utils.CommonCode;
 import io.netty.util.internal.StringUtil;
-import org.apache.lucene.search.TotalHits;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.*;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.eql.EqlSearchResponse;
-import org.elasticsearch.common.recycler.Recycler;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -41,6 +35,7 @@ import java.util.Map;
  * @author jiangcongcong
  * @date 2021/3/12 11:14
  * ES操作工具类
+ * 官方文档链接：https://www.elastic.co/guide/en/elasticsearch/client/java-rest/current/java-rest-high.html
  */
 public class EsRestClient {
 
