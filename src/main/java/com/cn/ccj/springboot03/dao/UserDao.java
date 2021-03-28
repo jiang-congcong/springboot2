@@ -2,6 +2,7 @@ package com.cn.ccj.springboot03.dao;
 
 import org.apache.ibatis.annotations.Mapper;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -12,5 +13,7 @@ import java.util.Map;
 public interface UserDao {
 
     public void insertUserIdentity(Map map);
+
+    public List<Map<String,Object>> selectUserByUserName(String userName);
 
 }

@@ -8,6 +8,10 @@ package com.cn.ccj.springboot03.utils;
 public class CommonCode {
 
     //默认异常编码
-    public String DEFAUT_ERROR_CODE = "-9999";
+    public static String DEFAUT_ERROR_CODE = "-9999";
+
+    public static String getDEFAUT_ERROR_CODE(){
+        return DEFAUT_ERROR_CODE;
+    }
 
 }

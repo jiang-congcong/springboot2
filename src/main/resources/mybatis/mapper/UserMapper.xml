@@ -9,9 +9,18 @@
 <mapper namespace="com.cn.ccj.springboot03.dao.UserDao">
 
     <insert id="insertUserIdentity" parameterType="java.util.Map">
-        insert into useridetity(username,password,salt)
+        insert into t_user_identity(username,password,salt)
         values
         (#{userName},#{password},#{salt})
     </insert>
 
+    <select id="selectUserByUserName" parameterType="java.lang.String" resultType="java.util.Map">
+        select
+        username userName,
+        password password,
+        salt salt
+        from t_user_identity
+        where
+        username = #{userName}
+    </select>
 </mapper>

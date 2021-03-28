@@ -1,6 +1,7 @@
 package com.cn.ccj.springboot03.config;
 
 import com.cn.ccj.springboot03.shiro.ShiroRealm;
+import org.apache.shiro.authc.credential.HashedCredentialsMatcher;
 import org.apache.shiro.realm.Realm;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
@@ -45,6 +46,10 @@ public class ShiroConfig {
     @Bean
     public Realm realm(){
         ShiroRealm shiroRealm = new ShiroRealm();
+        HashedCredentialsMatcher hashedCredentialsMatcher = new HashedCredentialsMatcher();
+        hashedCredentialsMatcher.setHashAlgorithmName("MD5"); //设置加密算法
+        hashedCredentialsMatcher.setHashIterations(1024);//设置散列次数
+        shiroRealm.setCredentialsMatcher(hashedCredentialsMatcher);
         return shiroRealm;
     }
 
