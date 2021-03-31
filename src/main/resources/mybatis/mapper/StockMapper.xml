@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--配置文件版-->
+<!--
+	namespace:命名空间：一定唯一 ,必须是某个接口函数的完全限定名
+ -->
+<mapper namespace="com.cn.ccj.springboot03.dao.StockDao">
+
+    <insert id="insertStock" parameterType="java.util.Map">
+        insert into `t_goods_stock`
+        (`stock_id`,`stock_num`,`stock_consume`,`crt_user_id`,`crt_time`,`stock_valid`)
+        values
+        (#{stockId},#{stockNum},#{stockConsume},#{crtUserId},#{crtTime},#{stockValid})
+
+    </insert>
+
+    <insert id="insertStockRelation" parameterType="java.util.Map">
+        insert into `t_goods_stock_relation`
+        (`goods_id`,`stock_id`,`crt_user_id`,`crt_time`)
+        values
+        (#{goodsId},#{stockId},#{crtUserId},#{crtTime})
+    </insert>
+
+    <select id="selectStockByGoodsId" parameterType="java.lang.String" resultType="java.util.Map">
+        select
+        t1.`stock_id` stockId,
+        t1.`stock_num` stockNum,
+        t1.`stock_consume` stockConsume,
+        t1.`stock_valid` stockVaild
+        from
+        `t_goods_stock` t1
+        left join `t_goods_stock_relation` t2 on t1.stock_id = t2.stock_id
+        where
+        t2.goods_id = #{goodsId}
+    </select>
+
+</mapper>
