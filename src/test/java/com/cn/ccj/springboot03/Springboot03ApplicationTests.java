@@ -5,6 +5,7 @@ import com.cn.ccj.springboot03.entity.User;
 import com.cn.ccj.springboot03.generalException.GeneralException;
 import com.cn.ccj.springboot03.jsonUtil.JsonUtil;
 import com.cn.ccj.springboot03.redis.RedisOperate;
+import com.cn.ccj.springboot03.utils.BaseUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -18,6 +19,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.sql.Time;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -32,6 +35,9 @@ class Springboot03ApplicationTests {
 
     @Autowired
     EsRestClient esRestClient;
+
+    @Autowired
+    private BaseUtils baseUtils;
 
     public static Logger logger = LoggerFactory.getLogger(RedisOperate.class);
 
@@ -205,6 +211,16 @@ class Springboot03ApplicationTests {
         searchSourceBuilder.query(boolQueryBuilder);
         Map<String,Object> resultMap = esRestClient.scrollSearchFromES("test",searchSourceBuilder);
         System.out.println(resultMap);
+    }
+
+    @Test
+    public void testOtherWork() throws Exception {
+//        redisTemplate.opsForValue().set("REDIS_TAB_t_goods_information","1");
+//        System.out.println(redisTemplate.opsForValue().get("REDIS_TAB_t_goods_information"));
+        String mcdsId = baseUtils.getSequence("t_goods_information");
+        System.out.println(mcdsId);
+//        redisOperate.saveMessageToRedis("REDIS_TAB_t_goods_stock","1");
+//        redisOperate.saveMessageToRedis("REDIS_TAB_t_order_details","1");
     }
 
 }

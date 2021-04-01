@@ -1,5 +1,6 @@
 package com.cn.ccj.springboot03.iservice;
 
+import java.util.List;
 import java.util.Map;
 
 public interface IMainSV {

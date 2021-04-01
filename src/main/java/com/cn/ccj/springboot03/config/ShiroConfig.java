@@ -49,7 +49,7 @@ public class ShiroConfig {
         HashedCredentialsMatcher hashedCredentialsMatcher = new HashedCredentialsMatcher();
         hashedCredentialsMatcher.setHashAlgorithmName("MD5"); //设置加密算法
         hashedCredentialsMatcher.setHashIterations(1024);//设置散列次数
-        shiroRealm.setCredentialsMatcher(hashedCredentialsMatcher);
+        //shiroRealm.setCredentialsMatcher(hashedCredentialsMatcher);
         return shiroRealm;
     }
 
