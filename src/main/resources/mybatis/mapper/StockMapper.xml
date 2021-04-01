@@ -28,6 +28,7 @@
         t1.`stock_id` stockId,
         t1.`stock_num` stockNum,
         t1.`stock_consume` stockConsume,
+        (t1.`stock_num`-t1.`stock_consume`) remainderStock,
         t1.`stock_valid` stockVaild
         from
         `t_goods_stock` t1
@@ -35,5 +36,54 @@
         where
         t2.goods_id = #{goodsId}
     </select>
+
+    <update id="updateStock" parameterType="java.util.Map">
+        update `t_goods_stock`
+        set
+        <trim suffixOverrides=",">
+        <if test="stockNum !=null and stockNum.size()>0">
+            stock_num = #{stockNum},
+        </if>
+        <if test="stockConsume !=null and stockConsume !=''">
+            stock_consume = #{stockConsume},
+        </if>
+        <if test="alterTime !=null and alterTime != ''">
+            alter_time = #{alterTime},
+        </if>
+        </trim>
+        where
+        stock_id = #{stockId}
+        and stock_valid = "01"
+    </update>
+
+    <insert id="insertOrderDetails" parameterType="java.util.Map">
+        insert into `t_order_details`
+        (`order_id`,`goods_id`,`operate_num`,`operate_type`,`valid`,`crt_time`)
+        values 
+        (#{orderId},#{goodsId},#{operateNum},#{operateType},#{valid},#{crtTime})
+    </insert>
+    
+    <insert id="insertUserOrderRelation" parameterType="java.util.Map">
+        insert into `t_user_order_relation`
+        (
+        `user_id`,
+        `order_id`,
+        `crt_time`,
+        `valid`
+        <if test="note != null and note !=''">
+            ,`note`
+        </if>
+        )
+        values
+        (
+        #{userId},
+        #{orderId},
+        #{crtTime},
+        #{valid}
+        <if test="note != null and note !=''">
+            ,#{note}
+        </if>
+        )
+    </insert>
 
 </mapper>

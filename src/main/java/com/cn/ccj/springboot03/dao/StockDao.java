@@ -12,10 +12,22 @@ import java.util.Map;
 @Mapper
 public interface StockDao {
 
+    //新建库存
     public void insertStock(Map map);
 
+    //保存库存与商品关系
     public void insertStockRelation(Map map);
 
+    //查询库存
     public List<Map<String,Object>> selectStockByGoodsId(String goodsId);
+
+    //更新库存
+    public int updateStock(Map map);
+
+    //创建订单
+    public void insertOrderDetails(Map map);
+
+    //创建订单与用户关系
+    public void insertUserOrderRelation(Map map);
 
 }

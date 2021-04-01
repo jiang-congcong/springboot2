@@ -16,7 +16,7 @@ public class BaseUtils {
     //根据table数据库表名生成主键id
     public  String getSequence(String tableName) throws Exception {
 
-        String redis_tab = "REDIS_TAB"+tableName;
+        String redis_tab = "REDIS_TAB_"+tableName;
         String dateString = String.valueOf(System.currentTimeMillis());
         Object objectNum = redisOperate.getMessageFromRedis(redis_tab);
         String id = dateString;
