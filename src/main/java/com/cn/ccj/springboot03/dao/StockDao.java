@@ -24,6 +24,9 @@ public interface StockDao {
     //更新库存
     public int updateStock(Map map);
 
+    //秒杀高并发场景下更新库存
+    public int updateKillStock(Map<String,Object> map);
+
     //创建订单
     public void insertOrderDetails(Map map);
 

@@ -29,7 +29,8 @@
         t1.`stock_num` stockNum,
         t1.`stock_consume` stockConsume,
         (t1.`stock_num`-t1.`stock_consume`) remainderStock,
-        t1.`stock_valid` stockVaild
+        t1.`stock_valid` stockVaild,
+        t1.`version` version
         from
         `t_goods_stock` t1
         left join `t_goods_stock_relation` t2 on t1.stock_id = t2.stock_id
@@ -54,6 +55,20 @@
         where
         stock_id = #{stockId}
         and stock_valid = "01"
+    </update>
+
+    <update id="updateKillStock" parameterType="java.util.Map">
+        update `t_goods_stock`
+        set
+        <if test="alterTime !=null and alterTime != ''">
+            alter_time = #{alterTime},
+        </if>
+        stock_consume = stock_consume + #{stockConsume},
+        version = version + 1
+        where
+        stock_id = #{stockId}
+        and stock_valid = "01"
+        and version = #{version}
     </update>
 
     <insert id="insertOrderDetails" parameterType="java.util.Map">

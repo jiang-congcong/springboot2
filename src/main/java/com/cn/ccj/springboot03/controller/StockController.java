@@ -227,10 +227,10 @@ public class StockController {
 
     //悲观锁 synchronized关键字锁住方法，单线程执行，缺点效率低
     //注：synchronized关键字不要与@Transactional事务注解一起使用，会出问题，高并发场景下会出现超卖现象，单线程结束事务还未结束
-    @ApiOperation(value = "秒杀")
-    @RequestMapping(method = RequestMethod.POST,value = "/seckill")
+    @ApiOperation(value = "秒杀-悲观锁")
+    @RequestMapping(method = RequestMethod.POST,value = "/seckillByPessmisticLocking")
     @ResponseBody
-    public synchronized ResultOutputObject seckill(@RequestBody RequestInputObject requestInputObject) throws Exception {
+    public synchronized ResultOutputObject seckillByPessmisticLocking(@RequestBody RequestInputObject requestInputObject) throws Exception {
         ResultOutputObject resultOutputObject = new ResultOutputObject();
 
         Map mapParams = requestInputObject.getParams();
@@ -262,5 +262,43 @@ public class StockController {
         return resultOutputObject;
     }
 
+    //乐观锁 利用库存表version字段 和数据库实物的隔离性 来解决高并发引起的超卖
+    @ApiOperation(value = "秒杀-乐观锁")
+    @RequestMapping(method = RequestMethod.POST,value = "/seckillByOptimisticLocking")
+    @ResponseBody
+    public ResultOutputObject seckillByOptimisticLocking(@RequestBody RequestInputObject requestInputObject) throws Exception {
+        ResultOutputObject resultOutputObject = new ResultOutputObject();
+
+        Map mapParams = requestInputObject.getParams();
+        String goodsId = (String)mapParams.get("goodsId");
+        String operateNum = (String)mapParams.get("operateNum");
+        String userId = (String)mapParams.get("userId");
+        String operateType = (String)mapParams.get("operateType");
+        mapParams.put("stockConsume",operateNum);
+        if(ObjectUtils.isEmpty(userId)){
+            throw new GeneralException(CommonCode.getDEFAUT_ERROR_CODE(),"用户id不能为空");
+        }
+        if(ObjectUtils.isEmpty(goodsId)){
+            throw new GeneralException(CommonCode.getDEFAUT_ERROR_CODE(),"商品id不能为空");
+        }
+        if(ObjectUtils.isEmpty(operateNum)){
+            throw new GeneralException(CommonCode.getDEFAUT_ERROR_CODE(),"操作数量不能为空");
+        }
+        if(ObjectUtils.isEmpty(operateType)) {
+            throw new GeneralException(CommonCode.getDEFAUT_ERROR_CODE(), "操作类型不能为空");
+        }
+        mapParams.put("stockConsume",operateNum);
+        mapParams.put("seckillByOptimisticLocking","1");//秒杀乐观锁
+        try {
+            updateStockConsume(requestInputObject);//扣库存
+            insertOrder(requestInputObject);//创建订单
+        }catch (Exception e){
+            logger.error("秒杀异常："+e);
+            throw new GeneralException(CommonCode.getDEFAUT_ERROR_CODE(),"秒杀异常："+e);
+        }
+        resultOutputObject.setRtnMsg("秒杀-乐观锁成功");
+        resultOutputObject.setRtnCode("0");
+        return resultOutputObject;
+    }
 
 }
