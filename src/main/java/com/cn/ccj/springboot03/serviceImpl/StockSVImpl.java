@@ -80,6 +80,7 @@ public class StockSVImpl implements IStockSV {
         if (null != selectStockList && selectStockList.size() > 0) {
             Map selectStockMapFirst = selectStockList.get(0);
             String stockId = (String) selectStockMapFirst.get("stockId");
+            String version = String.valueOf(selectStockMapFirst.get("version"));
 
             String databaseStockConsume = String.valueOf(selectStockMapFirst.get("stockConsume"));//库存消耗量
             String databaseStockNum = String.valueOf(selectStockMapFirst.get("stockNum"));//原始库存量
@@ -100,12 +101,19 @@ public class StockSVImpl implements IStockSV {
             Map reqMap = new HashMap();
             reqMap.put("stockId", stockId);
             reqMap.put("stockConsume", updateStockConsume);
+            reqMap.put("version",version);
             Date date = new Date();
             SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
             String alterTime = formatter.format(date);
             reqMap.put("alterTime",alterTime);
+            String seckillByOptimisticLocking = (String)map.get("seckillByOptimisticLocking");
             try {
-                result = stockDao.updateStock(reqMap);
+                if("1".equals(seckillByOptimisticLocking)){
+                    reqMap.put("stockConsume", stockConsume);//覆盖数据，利用数据库进行加减  从而加锁
+                    result = stockDao.updateKillStock(reqMap);//秒杀高并发场景
+                }else {
+                    result = stockDao.updateStock(reqMap);
+                }
             } catch (Exception e) {
                 logger.error("更新库存失败：" + e.getMessage());
                 throw new GeneralException(CommonCode.getDEFAUT_ERROR_CODE(), "更新库存失败：" + e.getMessage());
