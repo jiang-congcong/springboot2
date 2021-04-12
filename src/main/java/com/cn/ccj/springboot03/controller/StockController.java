@@ -7,6 +7,7 @@ import com.cn.ccj.springboot03.iservice.IStockSV;
 import com.cn.ccj.springboot03.redis.RedisOperate;
 import com.cn.ccj.springboot03.utils.BaseUtils;
 import com.cn.ccj.springboot03.utils.CommonCode;
+import com.google.common.util.concurrent.RateLimiter;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
@@ -24,6 +25,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author jiangcongcong
@@ -40,6 +42,11 @@ public class StockController {
 
     @Autowired
     private BaseUtils baseUtils;
+
+    private RateLimiter rateLimiter = RateLimiter.create(20);
+
+    @Autowired
+    private RedisOperate redisOperate;
 
     public static Logger logger = LoggerFactory.getLogger(RedisOperate.class);
 
@@ -289,6 +296,59 @@ public class StockController {
         }
         mapParams.put("stockConsume",operateNum);
         mapParams.put("seckillByOptimisticLocking","1");//秒杀乐观锁
+        try {
+            updateStockConsume(requestInputObject);//扣库存
+            insertOrder(requestInputObject);//创建订单
+        }catch (Exception e){
+            logger.error("秒杀异常："+e);
+            throw new GeneralException(CommonCode.getDEFAUT_ERROR_CODE(),"秒杀异常："+e);
+        }
+        resultOutputObject.setRtnMsg("秒杀-乐观锁成功");
+        resultOutputObject.setRtnCode("0");
+        return resultOutputObject;
+    }
+
+    //乐观锁+令牌桶算法 解决高并发限流，加入redis限时抢购功能
+    @ApiOperation(value = "秒杀-乐观锁")
+    @RequestMapping(method = RequestMethod.POST,value = "/seckillByOptimisticLocking")
+    @ResponseBody
+    public ResultOutputObject seckillByOptimisticLockingAndTokenBucket(@RequestBody RequestInputObject requestInputObject) throws Exception {
+        ResultOutputObject resultOutputObject = new ResultOutputObject();
+
+        if(!rateLimiter.tryAcquire(2, TimeUnit.SECONDS)){
+            resultOutputObject.setRtnMsg("抢购失败，活动过于火爆，请重试");
+            resultOutputObject.setRtnCode("-9999");
+            return resultOutputObject;
+        }
+
+        Map mapParams = requestInputObject.getParams();
+        String goodsId = (String)mapParams.get("goodsId");
+        String operateNum = (String)mapParams.get("operateNum");
+        String userId = (String)mapParams.get("userId");
+        String operateType = (String)mapParams.get("operateType");
+        mapParams.put("stockConsume",operateNum);
+        if(ObjectUtils.isEmpty(userId)){
+            throw new GeneralException(CommonCode.getDEFAUT_ERROR_CODE(),"用户id不能为空");
+        }
+        if(ObjectUtils.isEmpty(goodsId)){
+            throw new GeneralException(CommonCode.getDEFAUT_ERROR_CODE(),"商品id不能为空");
+        }
+        if(ObjectUtils.isEmpty(operateNum)){
+            throw new GeneralException(CommonCode.getDEFAUT_ERROR_CODE(),"操作数量不能为空");
+        }
+        if(ObjectUtils.isEmpty(operateType)) {
+            throw new GeneralException(CommonCode.getDEFAUT_ERROR_CODE(), "操作类型不能为空");
+        }
+        mapParams.put("stockConsume",operateNum);
+        mapParams.put("seckillByOptimisticLocking","1");//秒杀乐观锁
+
+        //redis限时秒杀，在redis中将抢购商品id设置为key，并且设置key存活时间，超过时间redis自动清除key，从而达到限时功能
+        if(!redisOperate.isExitKey("seckill"+goodsId)){
+            resultOutputObject.setRtnMsg("秒杀活动已结束或者未开始");
+            resultOutputObject.setRtnCode("-9999");
+            return resultOutputObject;
+        }
+
         try {
             updateStockConsume(requestInputObject);//扣库存
             insertOrder(requestInputObject);//创建订单
