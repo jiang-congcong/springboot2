@@ -62,11 +62,12 @@
             <version>5.1.34</version>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>org.apache.shiro</groupId>-->
-<!--            <artifactId>shiro-spring-boot-starter</artifactId>-->
-<!--            <version>1.7.1</version>-->
-<!--        </dependency>-->
+        <!--引入令牌桶依赖-->
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>28.2-jre</version>
+        </dependency>
 
         <!--shiro依赖-->
         <dependency>
