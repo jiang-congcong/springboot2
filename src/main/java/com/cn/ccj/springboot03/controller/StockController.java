@@ -8,6 +8,7 @@ import com.cn.ccj.springboot03.redis.RedisOperate;
 import com.cn.ccj.springboot03.utils.BaseUtils;
 import com.cn.ccj.springboot03.utils.CommonCode;
 import com.google.common.util.concurrent.RateLimiter;
+import io.lettuce.core.ScriptOutputType;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
@@ -49,6 +50,8 @@ public class StockController {
     private RedisOperate redisOperate;
 
     public static Logger logger = LoggerFactory.getLogger(RedisOperate.class);
+
+    private static long maxRequestTime = 10;
 
     @ApiOperation(value = "新建库存")
     @RequestMapping(method = RequestMethod.POST,value = "/insertStock")
@@ -308,9 +311,9 @@ public class StockController {
         return resultOutputObject;
     }
 
-    //乐观锁+令牌桶算法 解决高并发限流，加入redis限时抢购功能
+    //乐观锁+令牌桶算法 解决高并发限流，加入redis限时抢购功能、用户访问次数控制限流
     @ApiOperation(value = "秒杀-乐观锁")
-    @RequestMapping(method = RequestMethod.POST,value = "/seckillByOptimisticLocking")
+    @RequestMapping(method = RequestMethod.POST,value = "/seckillByOptimisticLockingAndTokenBucket")
     @ResponseBody
     public ResultOutputObject seckillByOptimisticLockingAndTokenBucket(@RequestBody RequestInputObject requestInputObject) throws Exception {
         ResultOutputObject resultOutputObject = new ResultOutputObject();
@@ -341,6 +344,17 @@ public class StockController {
         }
         mapParams.put("stockConsume",operateNum);
         mapParams.put("seckillByOptimisticLocking","1");//秒杀乐观锁
+
+        //将用户访问次数加1
+        String reqTime = iStockSV.setUserCount(userId);
+        logger.info("请求次数："+reqTime);
+        //判断用户是否超过限定的抢购次数
+        Boolean isOverRequest = iStockSV.getUserCount(userId,maxRequestTime);
+        if(isOverRequest){
+            resultOutputObject.setRtnMsg("抢购频率过高，请稍后重试！");
+            resultOutputObject.setRtnCode("-9999");
+            return resultOutputObject;
+        }
 
         //redis限时秒杀，在redis中将抢购商品id设置为key，并且设置key存活时间，超过时间redis自动清除key，从而达到限时功能
         if(!redisOperate.isExitKey("seckill"+goodsId)){

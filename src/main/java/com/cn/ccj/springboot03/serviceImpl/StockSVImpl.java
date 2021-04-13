@@ -13,6 +13,7 @@ import org.springframework.util.ObjectUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author jiangcongcong
@@ -23,6 +24,9 @@ public class StockSVImpl implements IStockSV {
 
     @Autowired
     private StockDao stockDao;
+
+    @Autowired
+    private RedisOperate redisOperate;
 
     public static Logger logger = LoggerFactory.getLogger(RedisOperate.class);
 
@@ -200,4 +204,34 @@ public class StockSVImpl implements IStockSV {
         }
     }
 
+    @Override
+    public String setUserCount(String userId) throws Exception {
+        if(null!=userId&&userId.length()>0){
+            String key = "seckillLimitTime_"+userId;
+            String requestTime = (String)redisOperate.getMessageFromRedis(key);
+            if(null==requestTime){
+                redisOperate.saveMessageToRedis02(key,"0",3600, TimeUnit.SECONDS);
+            }
+            else{
+                Long reqTime = Long.parseLong(requestTime)+1;
+                redisOperate.saveMessageToRedis02(key,reqTime+"",3600,TimeUnit.SECONDS);
+            }
+            return requestTime;
+        }else {
+            throw new GeneralException(CommonCode.getDEFAUT_ERROR_CODE(),"用户id不能为空！");
+        }
+    }
+
+    @Override
+    public Boolean getUserCount(String userId,Long maxReqTime) throws Exception {
+        if(null!=userId&&null!=maxReqTime){
+            String key = "seckillLimitTime_"+userId;
+            String value = (String)redisOperate.getMessageFromRedis(key);
+            if(null!=value){
+                Long valueLong = Long.parseLong(value);
+                return valueLong > maxReqTime?true:false;
+            }
+        }
+        return false;
+    }
 }

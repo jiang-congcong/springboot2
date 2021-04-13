@@ -27,4 +27,8 @@ public interface IStockSV {
 
     public void insertUserOrderRelation(Map map) throws GeneralException;
 
+    public String setUserCount(String userId) throws Exception;
+
+    public Boolean getUserCount(String userId,Long maxReqTime) throws Exception;
+
 }

@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+import java.util.concurrent.TimeUnit;
+
 public class RedisOperate {
 
     @Autowired
@@ -71,6 +73,16 @@ public class RedisOperate {
         }
 
         return isExit;
+    }
+
+    public void saveMessageToRedis02(String key, String value, int time, TimeUnit timeUnit) throws Exception {
+        redisTemplate.setKeySerializer(new StringRedisSerializer());//key序列化
+        try {
+            redisTemplate.opsForValue().set(key, value,time,timeUnit);
+        }catch (Exception e){
+            logger.error("保存redis失败，原因："+e.getMessage());
+            throw new Exception("保存redis失败");
+        }
     }
 
 }
