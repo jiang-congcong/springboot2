@@ -3,9 +3,12 @@
         "http://mybatis.org/dtd/mybatis-3-config.dtd">
 
 <configuration>
-    <!--开启驼峰命名法 d_id自动识别did-->
+
     <settings>
+        <!--开启驼峰命名法 d_id自动识别did-->
         <setting name="mapUnderscoreToCamelCase" value="true"/>
+        <!--将执行的sql打印到控制台，方便debug-->
+        <setting name="logImpl" value="org.apache.ibatis.logging.stdout.StdOutImpl"/>
     </settings>
 
 </configuration>
